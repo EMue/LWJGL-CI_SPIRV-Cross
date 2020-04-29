@@ -153,6 +153,9 @@ matrix:
     - openssl aes-256-cbc -K $encrypted_3b8cb6da0fbe_key -iv $encrypted_3b8cb6da0fbe_iv -in .travis/id_rsa_deploy_travis.enc -out .travis/id_rsa_deploy_travis -d
 
     script:
+    - eval "$(ssh-agent -s)"
+    - chmod 600 .travis/id_rsa_deploy_travis
+    - ssh-add .travis/id_rsa_deploy_travis
     - mkdir build
     - cd build
     - "CC=powerpc64le-linux-gnu-gcc-4.8 CXX=powerpc64le-linux-gnu-g++-4.8 cmake $LINUX_CMAKE_PARAMS -DCMAKE_C_FLAGS=\"-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0\" .."
@@ -161,6 +164,19 @@ matrix:
     - "git log --first-parent --pretty=format:%H HEAD~2..HEAD~1 > revision.git"
     #- "aws s3 cp libspirv-cross-c-shared.so s3://build.lwjgl.org/nightly/linux/ppc64le/libspirv-cross.so $S3_PARAMS"
     #- "aws s3 cp revision.git s3://build.lwjgl.org/nightly/linux/ppc64le/libspirv-cross.so.git $S3_PARAMS"
+    - mkdir -p ../deploy
+    - cp libspirv-cross-c-shared.so ../deploy/libspirv-cross.so
+    - cp revision.git ../deploy/libspirv-cross.so.git
+    - cd ../deploy
+    - git init
+    - git remote add origin git@github.com:EMue/lwjgl3-bin.git
+    - git fetch origin 0449e44c07e2bdf09e79f21c75a92f7d94b0e496
+    - git checkout 0449e44c07e2bdf09e79f21c75a92f7d94b0e496
+    - git branch ppc64le_nightly_spvc
+    - git checkout ppc64le_nightly_spvc
+    - git add libspirv-cross.so libspirv-cross.so.git
+    - git commit -m "Deploy SPIRV-Cross from Travis CI."
+    - git push --force origin ppc64le_nightly_spvc
 
   # -----------------
   - name: "macOS"
